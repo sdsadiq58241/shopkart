@@ -4,6 +4,7 @@ import Image from "next/image";
 import { HeroBanner } from "@/components/HeroBanner";
 import { ProductCard, ProductCardSkeleton, Product } from "@/components/ProductCard";
 import { CATEGORIES } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 import {
   ArrowRight,
   Zap,
@@ -19,31 +20,32 @@ export const metadata: Metadata = {
 
 async function getFeaturedProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/products?featured=true&limit=8`,
-      { next: { revalidate: 300 } }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.products || [];
-  } catch {
+    const products = await prisma.product.findMany({
+      where: { featured: true },
+      take: 8,
+      orderBy: { createdAt: "desc" },
+    });
+    return JSON.parse(JSON.stringify(products));
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
     return [];
   }
 }
 
 async function getTrendingProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/products?trending=true&limit=8`,
-      { next: { revalidate: 300 } }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.products || [];
-  } catch {
+    const products = await prisma.product.findMany({
+      where: { trending: true },
+      take: 8,
+      orderBy: { createdAt: "desc" },
+    });
+    return JSON.parse(JSON.stringify(products));
+  } catch (error) {
+    console.error("Error fetching trending products:", error);
     return [];
   }
 }
+
 
 const promoItems = [
   {
