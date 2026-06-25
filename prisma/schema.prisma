@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  CARD
+  UPI
+  NETBANKING
+  WALLET
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  phone        String?
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orders    Order[]
+  cart      Cart[]
+  wishlist  Wishlist[]
+  reviews   Review[]
+  addresses Address[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  price       Float
+  discount    Float    @default(0)
+  category    String
+  stock       Int      @default(0)
+  images      String[]
+  rating      Float    @default(0)
+  ratingCount Int      @default(0)
+  brand       String?
+  tags        String[]
+  featured    Boolean  @default(false)
+  trending    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cart      Cart[]
+  wishlist  Wishlist[]
+  reviews   Review[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  userId          String
+  totalAmount     Float
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod @default(COD)
+  shippingAddress Json
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("reviews")
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  phone     String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
